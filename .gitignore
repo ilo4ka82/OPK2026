@@ -1,0 +1,24 @@
+# Виртуальное окружение
+venv/
+env/
+
+# Секретные данные (ВАЖНО!)
+.env
+.env.local
+
+# База данных
+*.db
+*.sqlite
+*.sqlite3
+
+# Логи
+*.log
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE
+.vscode/
+.idea/

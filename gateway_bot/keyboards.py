@@ -43,24 +43,6 @@ def get_ai_menu():
     
     return keyboard
 
-def get_handbook_menu():
-    """Меню справочника"""
-    keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
-    
-    keyboard.row(
-        KeyboardButton("📄 Правила приема"),
-    )
-    keyboard.row(
-        KeyboardButton("📖 Методички"),
-        KeyboardButton("💡 FAQ")
-    )
-    keyboard.row(
-        KeyboardButton("📁 Все документы")
-    )
-    keyboard.add(KeyboardButton("◀️ Главное меню"))
-    
-    return keyboard
-
 def get_timesheet_menu():
     """Меню табеля"""
     keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -217,16 +199,17 @@ def get_files_keyboard(category: str):
     ])
     
     # Добавляем кнопку для каждого файла
-    for filename in files:
-        # Обрезаем длинные имена
+    for idx, filename in enumerate(files):
+        # Обрезаем длинные имена для отображения
         display_name = filename
         if len(display_name) > 40:
             display_name = display_name[:37] + "..."
         
+        # ИСПРАВЛЕНО: используем индекс вместо полного имени
         keyboard.add(
             InlineKeyboardButton(
                 f"📄 {display_name}",
-                callback_data=f"file_{category}_{filename}"
+                callback_data=f"file_{category}_{idx}"  # ✅ Короткий callback_data!
             )
         )
     

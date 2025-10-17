@@ -354,16 +354,34 @@ async def file_download_callback(callback: types.CallbackQuery, state: FSMContex
         )
         return
     
-    # Парсим callback_data: file_category_filename
+    # Парсим callback_data: file_category_index
     parts = callback.data.split("_", 2)
     if len(parts) < 3:
         await callback.answer("❌ Ошибка данных")
         return
     
     category = parts[1]
-    filename = parts[2]
+    file_index = int(parts[2])  # ИСПРАВЛЕНО: получаем индекс вместо имени
     
-    file_path = os.path.join(config.DOCUMENTS_DIR, category, filename)
+    # Получаем список файлов заново
+    category_dir = os.path.join(config.DOCUMENTS_DIR, category)
+    
+    if not os.path.exists(category_dir):
+        await callback.answer("❌ Категория не найдена", show_alert=True)
+        return
+    
+    files = sorted([
+        f for f in os.listdir(category_dir) 
+        if os.path.isfile(os.path.join(category_dir, f))
+    ])
+    
+    # Проверяем что индекс валидный
+    if file_index >= len(files):
+        await callback.answer("❌ Файл не найден", show_alert=True)
+        return
+    
+    filename = files[file_index]  # ИСПРАВЛЕНО: получаем имя файла по индексу
+    file_path = os.path.join(category_dir, filename)
     
     if not os.path.exists(file_path):
         await callback.answer("❌ Файл не найден", show_alert=True)

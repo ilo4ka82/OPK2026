@@ -65,8 +65,7 @@ async def main_menu_handler(message: types.Message, state: FSMContext):
         await BotStates.ai_menu.set()
     
     elif text == "📚 Справочник":
-        # Проверяем права админа
-        from gateway_bot.handlers.handbook import is_admin
+        # Проверяем права админf
         admin = is_admin(user_id)
         
         admin_text = ""

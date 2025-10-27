@@ -12,6 +12,21 @@ from keyboards import (
 from states import BotStates
 from handlers.handbook import is_admin
 
+async def reset_state_handler(message: types.Message, state: FSMContext):
+    """
+    Обработчик на случай потери состояния после перезапуска.
+    Сбрасывает state и возвращает в главное меню.
+    """
+    await state.finish()
+    
+    await message.answer(
+        "🔄 Бот был перезапущен.\n"
+        "Возвращаю вас в главное меню...",
+        reply_markup=get_main_menu()
+    )
+    
+    await BotStates.main_menu.set()
+
 async def check_access(message: types.Message) -> bool:
     """Проверка доступа пользователя"""
     user_id = message.from_user.id
@@ -233,3 +248,9 @@ def register_handlers(dp: Dispatcher):
     
     # Тех.специалист
     dp.register_message_handler(tech_menu_handler, state=BotStates.tech_menu)
+
+    dp.register_message_handler(
+        reset_state_handler,
+        state="*",  # Любое состояние
+        content_types=types.ContentType.TEXT
+    )

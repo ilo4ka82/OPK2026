@@ -48,11 +48,10 @@ def get_timesheet_menu():
     keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
     
     keyboard.row(
-        KeyboardButton("▶️ Начать работу"),
-        KeyboardButton("⏸️ Закончить работу")
+        KeyboardButton("▶️ Начать смену"),
+        KeyboardButton("⏹️ Закончить смену")
     )
     keyboard.row(
-        KeyboardButton("☕ Перерыв"),
         KeyboardButton("📊 Моя статистика")
     )
     keyboard.add(KeyboardButton("◀️ Главное меню"))

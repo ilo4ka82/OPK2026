@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 from typing import Optional, List, Tuple
 import pytz
-from telegram.error import Forbidden
+
 
 from .connection import get_db_connection
 from ..utils import datetime_to_db_string

@@ -11,12 +11,12 @@ class TimesheetConfig:
     """Конфигурация табеля."""
     
     # === TELEGRAM ===
-    TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-    if not TELEGRAM_BOT_TOKEN:
-        raise ValueError("Критическая ошибка: TELEGRAM_BOT_TOKEN не найден в .env файле!")
+    TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("BOT_TOKEN")  # ← ИСПРАВЛЕНО
+    if not TELEGRAM_BOT_TOKEN:  # ← ИСПРАВЛЕНО (было BOT_TOKEN)
+        raise ValueError("Критическая ошибка: TELEGRAM_BOT_TOKEN или BOT_TOKEN не найден в .env файле!")
     
     # Парсинг списка ID администраторов
-    admin_ids_str = os.getenv("ADMIN_TELEGRAM_IDS", "")
+    admin_ids_str = os.getenv("ADMIN_TELEGRAM_IDS") or os.getenv("ADMIN_USERS", "")  # ← ИСПРАВЛЕНО
     cleaned_ids_str = admin_ids_str.strip().strip('[]')
     ADMIN_TELEGRAM_IDS = [
         int(admin_id.strip()) 

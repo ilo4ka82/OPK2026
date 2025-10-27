@@ -3,12 +3,22 @@
 """
 import logging
 import sys
+import os
 from aiogram import Bot, Dispatcher, executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
+# ИСПРАВЛЕНО: Добавляем РОДИТЕЛЬСКУЮ папку в sys.path
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+# Теперь импортируем как полноценный пакет
+from Tabel_service.database import init_db as init_tabel_db
+
 from config import config
-from handlers.start import register_handlers as register_start_handlers  # ✅
-from handlers.handbook import register_handlers as register_handbook_handlers  # если есть
+from handlers.start import register_handlers as register_start_handlers
+from handlers.handbook import register_handlers as register_handbook_handlers
+from handlers.timesheet import register_handlers as register_timesheet_handlers
 
 # Настройка логирования
 logging.basicConfig(
@@ -25,6 +35,13 @@ logger = logging.getLogger(__name__)
 
 async def on_startup(dp: Dispatcher):
     """Действия при запуске бота."""
+    # Инициализируем БД табеля
+    try:
+        init_tabel_db()
+        logger.info("✅ База данных табеля инициализирована")
+    except Exception as e:
+        logger.error(f"❌ Ошибка инициализации БД табеля: {e}", exc_info=True)
+    
     logger.info("✅ Gateway Bot запущен!")
 
 
@@ -43,12 +60,8 @@ def main():
         
         # Регистрация обработчиков
         register_start_handlers(dp)
-        
-        # Если есть обработчики для справочника
-        try:
-            register_handbook_handlers(dp)
-        except ImportError:
-            logger.warning("Обработчики handbook не найдены, пропускаем...")
+        register_handbook_handlers(dp)
+        register_timesheet_handlers(dp)
         
         logger.info("✅ Все обработчики зарегистрированы")
         logger.info("🚀 Запуск Gateway Bot...")

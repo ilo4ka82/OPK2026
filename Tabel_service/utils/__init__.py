@@ -18,7 +18,8 @@ from .validators import (
     validate_datetime_format,
     validate_location_age,
 )
-from .decorators import admin_required, log_errors
+# НЕ ИМПОРТИРУЕМ decorators! Они используют telegram
+# from .decorators import admin_required, log_errors  # ← ЗАКОММЕНТИРОВАЛИ
 from .messages import TimesheetMessages, AdminMessages
 
 __all__ = [
@@ -48,9 +49,9 @@ __all__ = [
     'validate_datetime_format',
     'validate_location_age',
     
-    # Decorators
-    'admin_required',
-    'log_errors',
+    # Decorators - УБРАЛИ ИЗ ЭКСПОРТА
+    # 'admin_required',
+    # 'log_errors',
     
     # Messages
     'TimesheetMessages',

@@ -19,6 +19,7 @@ class BotStates(StatesGroup):
     
     # Табель
     timesheet_menu = State()
+    timesheet_waiting_location = State()
     
     # Тех.специалист
     tech_menu = State()

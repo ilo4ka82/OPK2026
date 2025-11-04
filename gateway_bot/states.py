@@ -17,9 +17,18 @@ class BotStates(StatesGroup):
     handbook_waiting_file = State()       # Ожидание файла
     handbook_creating_category = State()  # Создание категории
     
-    # Табель
+    # Табель - базовый функционал
     timesheet_menu = State()
     timesheet_waiting_location = State()
+    
+    # Табель - ручные заявки (пользователь)
+    timesheet_manual_request_time = State()
+    
+    # Табель - ручные заявки (админ)
+    admin_manual_list = State()
+    admin_manual_process = State()
+    admin_manual_enter_time = State()
+    admin_manual_confirm = State()
     
     # Тех.специалист
     tech_menu = State()

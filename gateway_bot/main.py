@@ -7,12 +7,12 @@ import os
 from aiogram import Bot, Dispatcher, executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
-# ИСПРАВЛЕНО: Добавляем РОДИТЕЛЬСКУЮ папку в sys.path
+# Добавляем РОДИТЕЛЬСКУЮ папку в sys.path (D:\БотикСакает)
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-# Теперь импортируем как полноценный пакет
+# Импортируем из Tabel_service как из полноценного пакета
 from Tabel_service.database import init_db as init_tabel_db
 
 from config import config
@@ -40,7 +40,7 @@ async def on_startup(dp: Dispatcher):
         init_tabel_db()
         logger.info("✅ База данных табеля инициализирована")
     except Exception as e:
-        logger.error(f"❌ Ошибка инициализации БД табеля: {e}", exc_info=True)
+        logger.error(f"❌ Ошибка инициализации БД табеля: {e}")
     
     logger.info("✅ Gateway Bot запущен!")
 

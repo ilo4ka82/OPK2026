@@ -52,11 +52,26 @@ def get_timesheet_menu():
         KeyboardButton("⏹️ Закончить смену")
     )
     keyboard.row(
-        KeyboardButton("📊 Моя статистика")
+        KeyboardButton("📊 Моя статистика"),
+        KeyboardButton("🛠️ Ручная заявка")
     )
     keyboard.add(KeyboardButton("◀️ Главное меню"))
     
     return keyboard
+
+
+def get_location_keyboard():
+    """Клавиатура с кнопкой геолокации"""
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    keyboard.add(KeyboardButton("📍 Отправить геолокацию", request_location=True))
+    keyboard.add(KeyboardButton("◀️ Главное меню"))
+    return keyboard
+
+
+def get_manual_checkins_keyboard():
+    """Клавиатура для админа (заглушка, используются inline)"""
+    # Inline кнопки формируются в handlers
+    pass
 
 def get_tech_menu():
     """Меню тех.специалиста"""

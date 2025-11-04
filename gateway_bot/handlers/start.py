@@ -12,21 +12,6 @@ from keyboards import (
 from states import BotStates
 from handlers.handbook import is_admin
 
-async def reset_state_handler(message: types.Message, state: FSMContext):
-    """
-    Обработчик на случай потери состояния после перезапуска.
-    Сбрасывает state и возвращает в главное меню.
-    """
-    await state.finish()
-    
-    await message.answer(
-        "🔄 Бот был перезапущен.\n"
-        "Возвращаю вас в главное меню...",
-        reply_markup=get_main_menu()
-    )
-    
-    await BotStates.main_menu.set()
-
 async def check_access(message: types.Message) -> bool:
     """Проверка доступа пользователя"""
     user_id = message.from_user.id
@@ -80,7 +65,6 @@ async def main_menu_handler(message: types.Message, state: FSMContext):
         await BotStates.ai_menu.set()
     
     elif text == "📚 Справочник":
-        # Проверяем права админf
         admin = is_admin(user_id)
         
         admin_text = ""
@@ -98,12 +82,7 @@ async def main_menu_handler(message: types.Message, state: FSMContext):
     elif text == "⏰ Табель":
         await message.answer(
             "⏰ <b>Табель учета времени</b>\n\n"
-            "🚧 <i>Здесь будет переписанный табель с другого бота</i>\n\n"
-            "Функционал:\n"
-            "• Начало/конец рабочего дня\n"
-            "• Перерывы\n"
-            "• Статистика времени\n"
-            "• Отчеты",
+            "Выберите действие:",
             parse_mode="HTML",
             reply_markup=get_timesheet_menu()
         )
@@ -178,7 +157,6 @@ async def ai_question_handler(message: types.Message, state: FSMContext):
     
     question = message.text
     
-    # Пока заглушка
     await message.answer(
         f"❓ Твой вопрос:\n<i>{question}</i>\n\n"
         f"🤖 <b>Ответ:</b>\n"
@@ -189,23 +167,6 @@ async def ai_question_handler(message: types.Message, state: FSMContext):
     )
     
     await BotStates.ai_menu.set()
-
-# ===== Табель (заглушки) =====
-
-async def timesheet_menu_handler(message: types.Message, state: FSMContext):
-    """Обработчик меню табеля"""
-    
-    await message.answer(
-        "⏰ <b>Табель учета времени</b>\n\n"
-        "🚧 <i>Здесь будет переписанный табель с другого бота</i>\n\n"
-        "Функционал:\n"
-        "• Начало/конец рабочего дня\n"
-        "• Перерывы\n"
-        "• Статистика времени\n"
-        "• Отчеты",
-        parse_mode="HTML",
-        reply_markup=get_timesheet_menu()
-    )
 
 # ===== Тех.специалист (заглушки) =====
 
@@ -243,14 +204,5 @@ def register_handlers(dp: Dispatcher):
     dp.register_message_handler(ai_menu_handler, state=BotStates.ai_menu)
     dp.register_message_handler(ai_question_handler, state=BotStates.ai_asking)
     
-    # Табель
-    dp.register_message_handler(timesheet_menu_handler, state=BotStates.timesheet_menu)
-    
     # Тех.специалист
     dp.register_message_handler(tech_menu_handler, state=BotStates.tech_menu)
-
-    dp.register_message_handler(
-        reset_state_handler,
-        state="*",  # Любое состояние
-        content_types=types.ContentType.TEXT
-    )

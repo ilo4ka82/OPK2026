@@ -1,6 +1,8 @@
 """
 Утилиты для работы табеля.
 """
+import pytz
+
 from .constants import *
 from .formatters import (
     format_seconds_to_hhmmss,
@@ -22,6 +24,8 @@ from .validators import (
 # from .decorators import admin_required, log_errors  # ← ЗАКОММЕНТИРОВАЛИ
 from .messages import TimesheetMessages, AdminMessages
 
+MOSCOW_TZ = pytz.timezone('Europe/Moscow')
+
 __all__ = [
     # Constants
     'THE_OFFICE_ZONE',
@@ -32,6 +36,7 @@ __all__ = [
     'SESSIONS_PER_PAGE',
     'MAX_LOCATION_AGE_SECONDS',
     'MOSCOW_TIMEZONE',
+    'MOSCOW_TZ',
     
     # Formatters
     'format_seconds_to_hhmmss',

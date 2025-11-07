@@ -1,2 +1,11 @@
 aiogram==2.25.1
 python-dotenv==1.0.0
+
+# Для AI-помощника
+chromadb==0.4.22
+sentence-transformers==2.3.1
+PyPDF2==3.0.1
+python-docx==1.1.0
+langchain==0.1.0
+langchain-community==0.0.13
+tiktoken==0.5.2

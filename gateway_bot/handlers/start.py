@@ -57,8 +57,7 @@ async def main_menu_handler(message: types.Message, state: FSMContext):
         await message.answer(
             "🤖 <b>AI-помощник</b>\n\n"
             "Я помогу найти информацию в документах приемной комиссии.\n"
-            "Задавай любые вопросы!\n\n"
-            "<i>⚠️ AI пока в разработке - это заглушка</i>",
+            "Задавай любые вопросы!",
             parse_mode="HTML",
             reply_markup=get_ai_menu()
         )
@@ -116,59 +115,6 @@ async def back_to_main(message: types.Message, state: FSMContext):
     )
     await BotStates.main_menu.set()
 
-# ===== AI-помощник (заглушки) =====
-
-async def ai_menu_handler(message: types.Message, state: FSMContext):
-    """Обработчик меню AI"""
-    
-    text = message.text
-    
-    if text == "❓ Задать вопрос":
-        await message.answer(
-            "✏️ Задай свой вопрос текстом:",
-            reply_markup=get_ai_menu()
-        )
-        await BotStates.ai_asking.set()
-    
-    elif text == "🧹 Очистить историю":
-        await message.answer(
-            "✅ История диалога очищена!",
-            reply_markup=get_ai_menu()
-        )
-    
-    elif text == "📊 Статистика":
-        await message.answer(
-            "📊 <b>Твоя статистика:</b>\n\n"
-            "Всего вопросов: 0\n"
-            "Последний вопрос: —\n\n"
-            "<i>⚠️ Статистика пока не работает</i>",
-            parse_mode="HTML",
-            reply_markup=get_ai_menu()
-        )
-    
-    else:
-        await message.answer(
-            "Используй кнопки меню",
-            reply_markup=get_ai_menu()
-        )
-
-async def ai_question_handler(message: types.Message, state: FSMContext):
-    """Обработка вопроса к AI"""
-    
-    question = message.text
-    
-    await message.answer(
-        f"❓ Твой вопрос:\n<i>{question}</i>\n\n"
-        f"🤖 <b>Ответ:</b>\n"
-        f"[AI-помощник пока не подключен]\n\n"
-        f"Скоро здесь будет умный ответ на основе документов!",
-        parse_mode="HTML",
-        reply_markup=get_ai_menu()
-    )
-    
-    await BotStates.ai_menu.set()
-
-# ===== Тех.специалист (заглушки) =====
 
 async def tech_menu_handler(message: types.Message, state: FSMContext):
     """Обработчик меню тех.специалиста"""
@@ -183,6 +129,7 @@ async def tech_menu_handler(message: types.Message, state: FSMContext):
         parse_mode="HTML",
         reply_markup=get_tech_menu()
     )
+
 
 def register_handlers(dp: Dispatcher):
     """Регистрация обработчиков"""
@@ -199,10 +146,6 @@ def register_handlers(dp: Dispatcher):
         lambda msg: msg.text == "◀️ Главное меню",
         state="*"
     )
-    
-    # AI-помощник
-    dp.register_message_handler(ai_menu_handler, state=BotStates.ai_menu)
-    dp.register_message_handler(ai_question_handler, state=BotStates.ai_asking)
     
     # Тех.специалист
     dp.register_message_handler(tech_menu_handler, state=BotStates.tech_menu)

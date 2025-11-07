@@ -19,6 +19,7 @@ from config import config
 from handlers.start import register_handlers as register_start_handlers
 from handlers.handbook import register_handlers as register_handbook_handlers
 from handlers.timesheet import register_handlers as register_timesheet_handlers
+from handlers import ai_assistant
 
 # Настройка логирования
 logging.basicConfig(
@@ -62,6 +63,7 @@ def main():
         register_start_handlers(dp)
         register_handbook_handlers(dp)
         register_timesheet_handlers(dp)
+        ai_assistant.register_handlers(dp)
         
         logger.info("✅ Все обработчики зарегистрированы")
         logger.info("🚀 Запуск Gateway Bot...")

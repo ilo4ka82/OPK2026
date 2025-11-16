@@ -43,13 +43,13 @@ class DocumentLoader:
             self.knowledge_dir.mkdir(parents=True, exist_ok=True)
             logger.info(f"Создана папка для документов: {self.knowledge_dir}")
     
-    def load_all_documents(self, chunk_size: int = 500, chunk_overlap: int = 50) -> List[DocumentChunk]:
+    def load_all_documents(self, chunk_size: int = 800, chunk_overlap: int = 200) -> List[DocumentChunk]:
         """
         Загружает все документы из папки ai_knowledge
         
         Args:
-            chunk_size: Размер чанка в символах
-            chunk_overlap: Перекрытие между чанками (для контекста)
+            chunk_size: Размер чанка в символах (увеличен до 800 для лучшего контекста)
+            chunk_overlap: Перекрытие между чанками (увеличено до 200 для связности)
         
         Returns:
             Список DocumentChunk
@@ -203,7 +203,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     
     loader = DocumentLoader()
-    documents = loader.load_all_documents(chunk_size=500, chunk_overlap=50)
+    documents = loader.load_all_documents(chunk_size=800, chunk_overlap=200)  # ✅ ОБНОВЛЕНО
     
     print(f"\n📚 Загружено документов: {len(documents)}")
     
@@ -213,6 +213,7 @@ if __name__ == "__main__":
         print(f"Файл: {documents[0].metadata.get('file_name')}")
         if documents[0].page:
             print(f"Страница: {documents[0].page}")
+        print(f"Длина чанка: {len(documents[0].text)} символов")  # ✅ ДОБАВЛЕНО
         print(f"Текст: {documents[0].text[:200]}...")
     else:
         print("\n⚠️ Документы не найдены!")

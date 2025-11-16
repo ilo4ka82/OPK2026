@@ -3,10 +3,11 @@
 """
 import sys
 import os
+import time
 import logging
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
 # Добавляем путь к AI_helper
 parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -14,6 +15,8 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 from AI_helper.assistant import AIAssistant
+from AI_helper.query_processor import QueryProcessor
+from AI_helper.logger import AILogger
 from states import BotStates
 from keyboards import get_ai_menu
 
@@ -22,6 +25,11 @@ logger = logging.getLogger(__name__)
 # Создаём один экземпляр AI Assistant
 ai_assistant = None
 
+query_processor = QueryProcessor()
+
+# Создаём экземпляр логгера
+ai_logger = AILogger()
+
 
 def get_ai_assistant():
     """Ленивая инициализация AI Assistant"""
@@ -29,7 +37,7 @@ def get_ai_assistant():
     if ai_assistant is None:
         logger.info("🤖 Инициализация AI Assistant...")
         print("🤖 Инициализация AI Assistant...")
-        ai_assistant = AIAssistant(top_k=3)
+        ai_assistant = AIAssistant(top_k=10)
         logger.info("✅ AI Assistant готов!")
         print("✅ AI Assistant готов!")
     return ai_assistant
@@ -114,6 +122,7 @@ async def ai_question_handler(message: types.Message, state: FSMContext):
         return
     
     question = message.text.strip()
+    start_time = time.time()
     
     # Отправляем индикатор "печатает..."
     await message.bot.send_chat_action(message.chat.id, "typing")
@@ -137,10 +146,59 @@ async def ai_question_handler(message: types.Message, state: FSMContext):
                 role = "Пользователь" if msg['role'] == 'user' else "Ассистент"
                 conversation_context += f"{role}: {msg['content']}\n"
         
-        # 1. Поиск документов (чистый вопрос без истории)
-        search_results = assistant.vector_store.search(question, top_k=10)
+        # 1. Предобработка запроса
+        processed_query = query_processor.process(question)
+        logger.info(f"🔄 Обработанный запрос: {processed_query}")
+
+        # 2. Поиск документов
+        search_results = assistant.vector_store.search(processed_query, top_k=10)
+
+        # 3. Фильтрация по релевантности
+        max_relevance = max([s['score'] for s in search_results]) if search_results else 0
+        logger.info(f"🎯 Максимальная релевантность: {max_relevance:.3f}")
+
+        if max_relevance < 0.6:
+            # Релевантность слишком низкая - информации нет
+            await status_msg.delete()
+            
+            no_info_text = (
+                "🤔 <b>К сожалению, я не нашёл информацию по вашему вопросу в документах.</b>\n\n"
+                "Рекомендую:\n"
+                "• Переформулировать вопрос\n"
+                "• Обратиться в приёмную комиссию:\n"
+                "  📞 Телефон: +7 (495) 957-72-32\n"
+                "  📧 Email: priem@mtuci.ru\n"
+                "  🌐 Сайт: mtuci.ru\n\n"
+                "<i>Попробуйте задать более конкретный вопрос или использовать другие формулировки.</i>"
+            )
+            
+            await message.answer(no_info_text, parse_mode="HTML", reply_markup=get_dialog_keyboard())
+            
+            # Логируем низкую релевантность
+            response_time_ms = int((time.time() - start_time) * 1000)
+            
+            request_id = ai_logger.log_request(
+                user_id=message.from_user.id,
+                username=message.from_user.username or message.from_user.first_name,
+                question=question,
+                answer="[Информация не найдена - низкая релевантность]",
+                sources=search_results,
+                response_time_ms=response_time_ms,
+                context_length=0
+            )
+            
+            logger.warning(f"⚠️ Низкая релевантность ({max_relevance:.3f}) для запроса: {question}")
+            
+            # Обновляем FSM
+            questions_count = data.get('ai_questions_count', 0)
+            await state.update_data(
+                ai_history=history,
+                ai_questions_count=questions_count + 1
+            )
+            
+            return  # ✅ ВАЖНО! Выходим из функции
         
-        # 2. Формируем контекст из документов
+        # 4. Формируем контекст из документов
         context_parts = []
         for idx, result_doc in enumerate(search_results, 1):
             context_parts.append(
@@ -152,31 +210,21 @@ async def ai_question_handler(message: types.Message, state: FSMContext):
         
         doc_context = "\n".join(context_parts)
         
-        # 3. Формируем полный промпт
-        full_prompt = (
-            "Ты — умный помощник приёмной комиссии университета.\n\n"
-            "КОНТЕКСТ ИЗ ДОКУМЕНТОВ:\n"
-            f"{doc_context}\n\n"
+        # 5. Формируем полный промпт
+        from AI_helper.prompts import build_full_prompt
+        
+        full_prompt = build_full_prompt(
+            question=question,
+            doc_context=doc_context,
+            conversation_history=conversation_context if history else None
         )
         
-        if history:
-            full_prompt += f"{conversation_context}\n\n"
-        
-        full_prompt += f"ТЕКУЩИЙ ВОПРОС ПОЛЬЗОВАТЕЛЯ:\n{question}\n\n"
-        full_prompt += (
-            "ВАЖНО:\n"
-            "1. Отвечай на основе предоставленного контекста\n"
-            "2. Учитывай историю для понимания местоимений (\"это\", \"ней\", \"там\")\n"
-            "3. Если информации нет - так и скажи\n"
-            "4. Указывай источники"
-        )
-        
-        # 4. Генерируем ответ
+        # 6. Генерируем ответ
         from AI_helper.llm import Message
         messages = [Message(role="user", content=full_prompt)]
         answer = assistant.llm.generate(messages, temperature=0.6)
         
-        # 5. Формируем результат
+        # 7. Формируем результат
         result = {
             'answer': answer,
             'sources': [
@@ -211,6 +259,33 @@ async def ai_question_handler(message: types.Message, state: FSMContext):
         else:
             await message.answer(answer_text, parse_mode="HTML", reply_markup=get_dialog_keyboard())
         
+        # ✅ ЛОГИРОВАНИЕ
+        response_time_ms = int((time.time() - start_time) * 1000)
+        
+        request_id = ai_logger.log_request(
+            user_id=message.from_user.id,
+            username=message.from_user.username or message.from_user.first_name,
+            question=question,
+            answer=result['answer'],
+            sources=result['sources'],
+            response_time_ms=response_time_ms,
+            context_length=len(doc_context)
+        )
+        
+        logger.info(f"✅ Запрос #{request_id} залогирован")
+        
+        # ✅ КНОПКИ ОЦЕНКИ
+        feedback_keyboard = InlineKeyboardMarkup(row_width=2)
+        feedback_keyboard.add(
+            InlineKeyboardButton("👍 Полезно", callback_data=f"fb_pos_{request_id}"),
+            InlineKeyboardButton("👎 Не помогло", callback_data=f"fb_neg_{request_id}")
+        )
+        
+        await message.answer(
+            "Был ли ответ полезен?",
+            reply_markup=feedback_keyboard
+        )
+        
         # Сохраняем в историю
         history.append({"role": "user", "content": question})
         history.append({"role": "assistant", "content": result['answer']})
@@ -235,6 +310,34 @@ async def ai_question_handler(message: types.Message, state: FSMContext):
         )
 
 
+async def feedback_handler(callback_query: types.CallbackQuery):
+    """Обработка обратной связи"""
+    data = callback_query.data
+    
+    logger.info(f"🔔 Получен callback: {data}")  # ✅ ДОБАВЛЕНО
+    print(f"🔔 Получен callback: {data}")  # ✅ ДОБАВЛЕНО
+    
+    try:
+        if data.startswith("fb_pos_"):
+            request_id = int(data.replace("fb_pos_", ""))
+            logger.info(f"👍 Положительная оценка для запроса #{request_id}")  # ✅ ДОБАВЛЕНО
+            ai_logger.log_feedback(request_id, feedback=1)
+            await callback_query.answer("✅ Спасибо за оценку!")
+            
+        elif data.startswith("fb_neg_"):
+            request_id = int(data.replace("fb_neg_", ""))
+            logger.info(f"👎 Отрицательная оценка для запроса #{request_id}")  # ✅ ДОБАВЛЕНО
+            ai_logger.log_feedback(request_id, feedback=-1)
+            await callback_query.answer("Спасибо! Мы учтём ваш отзыв.")
+        
+        # Удаляем кнопки после оценки
+        await callback_query.message.edit_reply_markup(reply_markup=None)
+        logger.info("✅ Кнопки удалены")  # ✅ ДОБАВЛЕНО
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка обработки feedback: {e}", exc_info=True)  # ✅ ДОБАВЛЕНО
+        await callback_query.answer("Ошибка сохранения оценки")
+
 async def cancel_ai_question(message: types.Message, state: FSMContext):
     """Отмена вопроса к AI"""
     await message.answer("❌ Диалог отменён", reply_markup=get_ai_menu())
@@ -246,3 +349,11 @@ def register_handlers(dp: Dispatcher):
     dp.register_message_handler(ai_menu_handler, state=BotStates.ai_menu)
     dp.register_message_handler(ai_question_handler, state=BotStates.ai_asking)
     dp.register_message_handler(cancel_ai_question, commands=['cancel'], state=BotStates.ai_asking)
+    
+    dp.register_callback_query_handler(
+        feedback_handler, 
+        lambda c: c.data and c.data.startswith("fb_"),
+        state="*"  # ДОБАВЛЕНО - работает в любом state
+    )
+    
+    print("✅ AI handlers registered (including feedback)")
